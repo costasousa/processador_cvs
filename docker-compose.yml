@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./beckend_processor
+    ports:
+      - "8000:8000" # Porta da aplicação
+      - "5678:5678" # Porta de debug para o serviço API
+    volumes:
+      - ./beckend_processor:/app
+    restart: always
+    networks:
+      - resume-network
+
+  frontend:
+    build:
+      context: ./resume_frontend_django
+    ports:
+      - "8001:8001" # Porta da aplicação
+      - "5679:5679" # Porta de debug para o serviço Frontend Django
+    volumes:
+      - ./resume_frontend_django:/app 
+    depends_on:
+      - api
+    restart: always
+    networks:
+      - resume-network
+
+networks:
+  resume-network:
+    driver: bridge
+

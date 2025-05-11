@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Processador de Currículos</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { padding: 10px 15px; cursor: pointer; }
+        .results { margin-top: 20px; border: 1px solid #ccc; padding: 15px; background-color: #f9f9f9; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
+        ul { padding-left: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>Processador de Currículos</h1>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="pdf_files">Selecione os Currículos (PDF):</label>
+            <input type="file" id="pdf_files" name="pdf_files" accept=".pdf" multiple required>
+            <small>Você pode selecionar múltiplos arquivos segurando Ctrl enquanto seleciona.</small>
+        </div>
+        <div class="form-group">
+            <label for="keywords">Palavras-chave (separadas por vírgula):</label>
+            <input type="text" id="keywords" name="keywords" placeholder="Ex: python, django, api" required>
+        </div>
+        <button type="submit">Processar</button>
+    </form>
+
+    {% if error %}
+        <div class="results error">
+            <h2>Erro</h2>
+            <p>{{ error }}</p>
+        </div>
+    {% endif %}
+    {% if processed_results %}
+        ''<h2>Resultados do Processamento</h2>
+        {% for result in processed_results|dictsortreversed:"match_percentage" %}
+            <div class="results {% if result.error %}error{% else %}success{% endif %}">
+                <h3>Arquivo: {{ result.filename }}</h3>
+                {% if result.error %}
+                    <p><strong>Erro:</strong> {{ result.error }}</p>
+                {% else %}
+                    <p><strong>Porcentagem de Match:</strong> {{ result.match_percentage|floatformat:2 }}%</p>
+                    
+                    <h4>Palavras-chave Encontradas (Contagem):</h4>
+                    {% if result.keywords_found %}
+                        <ul>
+                            {% for keyword, count in result.keywords_found.items %}
+                                <li>{{ keyword }}: {{ count }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>Nenhuma palavra-chave encontrada.</p>
+                    {% endif %}
+
+                    <h4>Palavras-chave Não Encontradas:</h4>
+                    {% if result.missing_keywords %}
+                        <ul>
+                            {% for keyword in result.missing_keywords %}
+                                <li>{{ keyword }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>Todas as palavras-chave foram encontradas.</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+
+</body>
+</html>
