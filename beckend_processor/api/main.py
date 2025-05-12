@@ -37,16 +37,19 @@ async def process_resumes(
             })
             continue 
         
-        # Usar um diretório temporário para salvar cada arquivo
+
         with tempfile.TemporaryDirectory() as temp_dir:
+
             file_id = str(uuid.uuid4())
            
             file_path = os.path.join(temp_dir, f"{file_id}.pdf")
             
-            # Salvar o arquivo temporariamente
+
             try:
+
                 with open(file_path, "wb") as buffer:
                     shutil.copyfileobj(file.file, buffer)
+
             except Exception as e:
                 results_list.append({
                     "filename": file.filename,
@@ -54,7 +57,7 @@ async def process_resumes(
                 })
                 continue 
             
-            # Processar o PDF
+
             try:
                 text = extract_text_from_pdf(file_path)
                 
@@ -65,6 +68,7 @@ async def process_resumes(
                     "keywords_found": keyword_results
                 })
             except Exception as e:
+                 
                  results_list.append({
                     "filename": file.filename,
                     "error": f"Erro ao processar o PDF: {str(e)}"

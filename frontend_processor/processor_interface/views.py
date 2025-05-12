@@ -2,7 +2,6 @@ from django.shortcuts import render
 import requests
 import json
 
-# URL da API de processamento atualizada para o endpoint de múltiplos arquivos
 API_URL = "http://api:8000/process-resumes/"
 
 def upload_form(request):
@@ -20,66 +19,72 @@ def upload_form(request):
         
         if not keywords:
             return render(request, 'processor_interface/upload_form.html', {
-                'error': 'Por favor, insira pelo menos uma palavra-chave.' # Corrigido erro de digitação
+                'error': 'Por favor, insira pelo menos uma palavra-chave.' 
             })
         
-        # Verificar se todos os arquivos selecionados são PDFs
         valid_files_for_api = []
         validation_errors = []
+
         for pdf_file in pdf_files:
+            
             if not pdf_file.name.endswith('.pdf'):
+
                 validation_errors.append(f"Arquivo '{pdf_file.name}' não é um PDF válido.")
+            
             else:
-                # Preparar a estrutura esperada pela API para múltiplos arquivos
-                # A biblioteca requests espera uma lista de tuplas (fieldname, file_tuple)
-                # O fieldname deve ser 'files' conforme definido na API FastAPI
+               
                 valid_files_for_api.append(('files', (pdf_file.name, pdf_file.read(), pdf_file.content_type)))
 
         if validation_errors:
+             
              return render(request, 'processor_interface/upload_form.html', {
                 'error': " ".join(validation_errors)
             })
 
         if not valid_files_for_api:
+             
              return render(request, 'processor_interface/upload_form.html', {
                 'error': 'Nenhum arquivo PDF válido foi selecionado para processamento.'
             })
 
         try:
-            # Preparar os dados para enviar à API
-            # 'files' agora é uma lista de tuplas preparada acima
+    
             data = {'keywords': keywords}
             
-            # Fazer a requisição para a API
             response = requests.post(API_URL, files=valid_files_for_api, data=data)
             
-            # Verificar se a requisição foi bem-sucedida (status 2xx)
             if response.status_code == 200:
-                # Processar a lista de resultados da API
+                
                 api_response = response.json()
-                results_list = api_response.get('results', []) # Espera uma lista de resultados
+                results_list = api_response.get('results', []) 
                 
                 processed_results = []
                 all_keywords = [k.strip() for k in keywords.split(',')]
                 total_keywords = len(all_keywords)
 
                 for result in results_list:
+
                     filename = result.get('filename')
                     error = result.get('error')
                     keywords_found_data = result.get('keywords_found', {})
                     
                     if error:
+
                         processed_results.append({
                             'filename': filename,
                             'error': error
                         })
+
                     else:
+
                         keywords_found = {k: count for k, count in keywords_found_data.items() if count > 0}
                         missing_keywords = [k for k, count in keywords_found_data.items() if count == 0]
                         found_keywords_count = len(keywords_found)
                         
                         match_percentage = 0
+
                         if total_keywords > 0:
+
                             match_percentage = (found_keywords_count / total_keywords) * 100
                         
                         processed_results.append({
@@ -89,39 +94,42 @@ def upload_form(request):
                             'match_percentage': match_percentage,
                             'error': None
                         })
-                print('BBBBBBBBBBBBBBBBBB   ---  processed_results', processed_results)
+
                 
 
                 return render(request, 'processor_interface/upload_form.html', {
-                    'processed_results': processed_results # Passa a lista de resultados processados
+                    'processed_results': processed_results 
                 })
             else:
-                # Tratar erro da API (resposta não 200)
+
                 error_message = f"Erro ao comunicar com a API: {response.status_code}"
                 try:
+
                     error_detail = response.json().get('detail', '')
+
                     if error_detail:
+
                         error_message += f" - {error_detail}"
+
                 except json.JSONDecodeError:
                      error_message += f" - Resposta não JSON: {response.text}"
                 except Exception:
-                    pass # Mantém a mensagem de erro original
+                    pass 
                 
                 return render(request, 'processor_interface/upload_form.html', {
                     'error': error_message
                 })
                 
         except requests.RequestException as e:
-            # Tratar erro de conexão com a API
+
             return render(request, 'processor_interface/upload_form.html', {
                 'error': f"Erro ao conectar com a API: {str(e)}"
             })
         except Exception as e:
-            # Tratar outros erros inesperados
+
             return render(request, 'processor_interface/upload_form.html', {
                 'error': f"Erro inesperado durante o processamento: {str(e)}"
             })
     
-    # Se for GET, apenas exibir o formulário
     return render(request, 'processor_interface/upload_form.html')
 

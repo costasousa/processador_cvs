@@ -15,12 +15,12 @@ services:
 
   frontend:
     build:
-      context: ./resume_frontend_django
+      context: ./frontend_processor
     ports:
       - "8001:8001" # Porta da aplicação
       - "5679:5679" # Porta de debug para o serviço Frontend Django
     volumes:
-      - ./resume_frontend_django:/app 
+      - ./frontend_processor:/app 
     depends_on:
       - api
     restart: always
